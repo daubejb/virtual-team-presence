@@ -1,4 +1,4 @@
-module github.com/daubejb/virtual-team-presence/calendar-service
+module github.com/daubejb/virtual-team-presence
 
 go 1.14
 
