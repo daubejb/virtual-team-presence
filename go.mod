@@ -1,3 +1,5 @@
 module github.com/daubejb/virtual-team-presence/calendar-service
 
-go 1.13
+go 1.14
+
+require golang.org/x/tools v0.0.0-20200819193742-d088b475e336 // indirect

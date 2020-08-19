@@ -1,22 +1,31 @@
-  
-# Start from a Debian image with the latest version of Go installed
-# and a workspace (GOPATH) configured at /go.
-FROM golang
+# Use the official Golang image to create a build artifact.
+# This is based on Debian and sets the GOPATH to /go.
+# https://hub.docker.com/_/golang
+FROM golang:1.13 as builder
 
-# To configure the app, set these environment variables or use the command line flags
-ENV CALENDAR_ALLOWED_ORIGINS *
-ENV CALENDAR_AUTHEMAIL YOUR_AUTHEMAIL
-ENV CALENDAR_AUTHSUBJECT YOUR_AUTHSUBJECT
-ENV CALENDAR_KEYFILEPATH YOUR_KEYFILEPATH
+# Create and change to the app directory.
+WORKDIR /app
 
-# Copy the local package files to the container's workspace.
-ADD . /go/src/github.com/daubejb/virtual-team-presence/calendar-service
+# Retrieve application dependencies using go modules.
+# Allows container builds to reuse downloaded dependencies.
+COPY go.* ./
+RUN go mod download
 
-# Build and install the app inside the container.
-RUN go get github.com/daubejb/virtual-team-presence/calendar-service
+# Copy local code to the container image.
+COPY . ./
 
-# Run the app by default when the container starts.
-ENTRYPOINT /go/bin/calendar-service
+# Build the binary.
+# -mod=readonly ensures immutable go.mod and go.sum in container builds.
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -v -o server
 
-# Document that the app listens on port 3000.
-EXPOSE 3000
+# Use the official Alpine image for a lean production container.
+# https://hub.docker.com/_/alpine
+# https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
+FROM alpine:3
+RUN apk add --no-cache ca-certificates
+
+# Copy the binary to the production image from the builder stage.
+COPY --from=builder /app/server /server
+
+# Run the web service on container startup.
+CMD ["/server"]
