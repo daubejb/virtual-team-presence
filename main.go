@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,12 +12,14 @@ import (
 	"strings"
 	"time"
 
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/calendar/v3"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
 var (
@@ -26,7 +28,6 @@ var (
 	authEmail      = flag.String("authEmail", "calendar@virtual-team-presence-81.iam.gserviceaccount.com", "Service account email address")
 	authSubject    = flag.String("authSubject", "jedaube@redhat.com", "Impersonated user email address")
 	allowedOrigins = flag.String("allowedOrigins", "*", "A comma-separated list of valid CORS origins")
-	keyFilePath    = flag.String("keyFile", "credentials.json", "The location of the PEM encoded private key")
 )
 
 func parseEnvironment() {
@@ -50,11 +51,6 @@ func parseEnvironment() {
 		*authSubject = envAuthSubject
 	}
 
-	//	Key file path
-	if envKeyfilepath := os.Getenv("CALENDAR_KEYFILEPATH"); envKeyfilepath != "" {
-		*keyFilePath = envKeyfilepath
-	}
-
 }
 
 func main() {
@@ -64,16 +60,51 @@ func main() {
 	//	Parse the command line for flags:
 	flag.Parse()
 
-	//	Read the key file in:
-	keydata, err := ioutil.ReadFile(*keyFilePath)
+	//
+	name := "projects/virtual-team-presence/secrets/credentials/versions/latest"
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Build the request.
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	}
+
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	temp := string(result.Payload.Data)
+
+	jsonData := []byte(temp)
+
+	type Cred struct {
+		Type             string
+		ProjectID        string
+		PrivateKeyID     string
+		PrivateKey       []byte
+		ClientEmail      string
+		ClientID         string
+		AuthURI          string
+		TokenURI         string
+		AuthProviderCert string
+		ClientCert       string
+	}
+
+	var out Cred
+	err2 := json.Unmarshal(jsonData, &out)
+	if err != nil {
+		log.Println(err2)
 	}
 
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
 	conf := &jwt.Config{
-		Email: *authEmail,
+		Email: out.ClientEmail,
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
@@ -83,7 +114,7 @@ func main() {
 		//
 		// The field only supports PEM containers with no passphrase.
 		// The openssl command will convert p12 keys to passphrase-less PEM containers.
-		PrivateKey: keydata,
+		PrivateKey: out.PrivateKey,
 		Scopes: []string{
 			calendar.CalendarScope,
 			calendar.CalendarReadonlyScope,
@@ -98,7 +129,7 @@ func main() {
 
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := conf.Client(oauth2.NoContext)
+	client2 := conf.Client(oauth2.NoContext)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/calendar/{calendarid}", func(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +139,7 @@ func main() {
 
 		//	Get a connection to the calendar service
 		//	If we have errors, return them using standard HTTP service method
-		svc, err := calendar.New(client)
+		svc, err := calendar.New(client2)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
