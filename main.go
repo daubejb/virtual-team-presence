@@ -72,7 +72,6 @@ func main() {
 		Name: name,
 	}
 
-	// Call the API.
 	result, err := client.AccessSecretVersion(ctx, req)
 	if err != nil {
 		log.Fatal(err)
