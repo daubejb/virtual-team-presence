@@ -84,7 +84,7 @@ func main() {
 		Type             string
 		ProjectID        string
 		PrivateKeyID     string
-		PrivateKey       []byte
+		PrivateKey       string
 		ClientEmail      string
 		ClientID         string
 		AuthURI          string
@@ -104,7 +104,7 @@ func main() {
 	conf := &jwt.Config{
 		Email: out.ClientEmail,
 
-		PrivateKey: out.PrivateKey,
+		PrivateKey: []byte(out.PrivateKey),
 		Scopes: []string{
 			calendar.CalendarScope,
 			calendar.CalendarReadonlyScope,
