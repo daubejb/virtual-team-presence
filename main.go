@@ -61,7 +61,7 @@ func main() {
 	flag.Parse()
 
 	//
-	name := "projects/virtual-team-presence/secrets/credentials/versions/latest"
+	name := "projects/329817979379/secrets/credentials/versions/3"
 	ctx := context.Background()
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
