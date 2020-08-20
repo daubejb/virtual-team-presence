@@ -106,7 +106,6 @@ func main() {
 
 		PrivateKey: []byte(out.PrivateKey),
 		Scopes: []string{
-			calendar.CalendarScope,
 			calendar.CalendarReadonlyScope,
 		},
 		TokenURL: google.JWTTokenURL,
