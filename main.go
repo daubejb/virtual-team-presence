@@ -162,5 +162,6 @@ func main() {
 	portString := strconv.Itoa(*port)
 	fmt.Println("Allowed origins: ", *allowedOrigins)
 	fmt.Println("Starting server on :", portString)
+	fmt.Println(out.PrivateKey)
 	http.ListenAndServe(":"+portString, handler)
 }
