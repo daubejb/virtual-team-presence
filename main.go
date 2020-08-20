@@ -133,12 +133,9 @@ func main() {
 		//	Get the list of events from now until the end of today
 		now := time.Now()
 		end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(24 * time.Hour)
-
-		events, err := svc.Events.List(id).
-			TimeMin(now.Format(time.RFC3339)).
-			TimeMax(end.Format(time.RFC3339)).
-			SingleEvents(true).
-			OrderBy("startTime").Do()
+		fbri := &calendar.FreeBusyRequestItem{Id: id}
+		fbriarr := []*calendar.FreeBusyRequestItem{fbri}
+		events, err := svc.Freebusy.Query(&calendar.FreeBusyRequest{Items: fbriarr, TimeMin: now.Format(time.RFC3339), TimeMax: end.Format(time.RFC3339)}).Do()
 
 		//	If we have errors, return them using standard HTTP service method
 		if err != nil {
