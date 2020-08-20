@@ -60,7 +60,6 @@ func main() {
 	//	Parse the command line for flags:
 	flag.Parse()
 
-	//
 	name := "projects/329817979379/secrets/credentials/versions/3"
 	ctx := context.Background()
 	client, err := secretmanager.NewClient(ctx)
