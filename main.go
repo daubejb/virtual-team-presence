@@ -24,7 +24,7 @@ import (
 
 var (
 	//	Flags
-	port           = flag.Int("port", 3000, "The port to listen on")
+	port           = flag.Int("port", 8080, "The port to listen on")
 	authEmail      = flag.String("authEmail", "calendar@virtual-team-presence-81.iam.gserviceaccount.com", "Service account email address")
 	authSubject    = flag.String("authSubject", "jedaube@redhat.com", "Impersonated user email address")
 	allowedOrigins = flag.String("allowedOrigins", "*", "A comma-separated list of valid CORS origins")
@@ -105,30 +105,17 @@ func main() {
 	// Developer Console (https://console.developers.google.com).
 	conf := &jwt.Config{
 		Email: out.ClientEmail,
-		// The contents of your RSA private key or your PEM file
-		// that contains a private key.
-		// If you have a p12 file instead, you
-		// can use `openssl` to export the private key into a pem file.
-		//
-		//    $ openssl pkcs12 -in key.p12 -passin pass:notasecret -out key.pem -nodes
-		//
-		// The field only supports PEM containers with no passphrase.
-		// The openssl command will convert p12 keys to passphrase-less PEM containers.
+
 		PrivateKey: out.PrivateKey,
 		Scopes: []string{
 			calendar.CalendarScope,
 			calendar.CalendarReadonlyScope,
 		},
 		TokenURL: google.JWTTokenURL,
-		// If you would like to impersonate a user, you can
-		// create a transport with a subject. The following GET
-		// request will be made on the behalf of user@example.com.
-		// Optional.
+
 		Subject: *authSubject,
 	}
 
-	// Initiate an http.Client, the following GET request will be
-	// authorized and authenticated on the behalf of user@example.com.
 	client2 := conf.Client(oauth2.NoContext)
 
 	r := mux.NewRouter()
